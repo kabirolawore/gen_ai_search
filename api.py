@@ -127,6 +127,7 @@ async def ask_localai(Item:Item):
             max_tokens=1024,
             stream=True
         )
+        # print("completion", completion)
         response = completion.choices[0].message.content
     else:
         input_ids = tokenizer.apply_chat_template(

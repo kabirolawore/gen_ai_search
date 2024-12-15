@@ -1,8 +1,7 @@
 from qdrant_client import QdrantClient
-# from dotenv import load_dotenv
-from langchain_qdrant import Qdrant, QdrantVectorStore
-from qdrant_client.models import Distance, VectorParams
-from langchain.embeddings import HuggingFaceEmbeddings
+from qdrant_client.models import VectorParams, Distance # Distance metric (e.g., DOT, COSINE, EUCLIDEAN)
+from langchain_qdrant import Qdrant
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import TokenTextSplitter
 from os import listdir
 from os.path import isfile, join, isdir
@@ -15,16 +14,13 @@ import os
 
 
 
-def get_files(dir):
+def get_files(dire):
     file_list = []
-    # for f in listdir(dir):
-    #     if isfile(join(dir,f)):
-    #         file_list.append(join(dir,f))
-    #     elif isdir(join(dir, f)):
-    #         file_list =file_list + get_files(join(dir, f))
-    for dir, _, filenames in os.walk(dir):
+
+    for dire, _, filenames in os.walk(dire):
         for f in filenames:
-            file_list.append(os.path.join(dir, f))
+            # print(f)
+            file_list.append(os.path.join(dire, f))
     return file_list
 
 
@@ -65,8 +61,15 @@ def main_indexing(mypath):
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
 
-    client.create_collection(collection_name,vectors_config=VectorParams(size=768, distance=Distance.DOT))
+    client.create_collection(
+        collection_name,
+        vectors_config=VectorParams(size=768, distance=Distance.DOT)
+        # DOT refers to the dot product, which measures similarity based on the angle and magnitude of the vectors.
+        # vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+        # vectors_config=VectorParams(size=384, distance=Distance.EUCLIDEAN)
+    )
     qdrant = Qdrant(client, collection_name, hf)
+
     print("Indexing...")
     onlyfiles = get_files(mypath)
     file_content = ""
@@ -77,11 +80,11 @@ def main_indexing(mypath):
             print("Document title with ~: " + file)
         elif file.endswith(".pdf"):
             try:
-                print("indexing "+file)
+                print("indexing " + file)
                 reader = PyPDF2.PdfReader(file)
-                for i in range(0,len(reader.pages)):
-                    file_content = file_content + " "+reader.pages[i].extract_text()
-            except Exception: # added by pdchristian to catch decryption error
+                for i in range(0, len(reader.pages)):
+                    file_content = file_content + " " + reader.pages[i].extract_text()
+            except Exception: # added to catch decryption error
                 file_content = "Empty due to extraction error."  # added by pdchristian to catch decryption error
         elif file.endswith(".txt") or file.endswith(".md") or file.endswith(".markdown"):
             print("indexing " + file)
@@ -96,13 +99,20 @@ def main_indexing(mypath):
             file_content = getTextFromPPTX(file)
         else:
             continue
+
         text_splitter = TokenTextSplitter(chunk_size=500, chunk_overlap=50)
         texts = text_splitter.split_text(file_content)
         metadata = []
-        for i in range(0,len(texts)):
+        for i in range(0, len(texts)):
             metadata.append({"path":file})
         qdrant.add_texts(texts,metadatas=metadata)
         len(texts)
-    print(onlyfiles)
-    print("Finished indexing!")
+    # print(onlyfiles)
+    print("---------------------------------Finished indexing!--------------------------------")
 
+if __name__ == "__main__":
+    arguments = sys.argv
+    if len(arguments) > 1:
+        main_indexing(arguments[1])
+    else:
+        print("You need to provide a path to folder with documents to index as command line argument")
