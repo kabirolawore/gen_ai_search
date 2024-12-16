@@ -15,8 +15,6 @@ load_dotenv()
 NV_KEY = os.getenv("NVIDIA_API_KEY")
 HF_KEY = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
-# print(NV_KEY)
-# print(HF_KEY)
 
 
 class Item(BaseModel):
