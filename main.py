@@ -46,10 +46,12 @@ def main_indexing(mypath):
     model_name = "sentence-transformers/msmarco-bert-base-dot-v5"
     if torch.cuda.is_available():
         model_kwargs = {'device': 'cuda'}
+        print("------------Using GPU----------")
     elif torch.backends.mps.is_available():
         model_kwargs = {'device': 'mps'}
     else:
         model_kwargs = {'device': 'cpu'}
+        print("------------Using CPU----------")
     encode_kwargs = {'normalize_embeddings': True}
     hf = HuggingFaceEmbeddings(
         model_name=model_name,
@@ -71,24 +73,46 @@ def main_indexing(mypath):
     qdrant = Qdrant(client, collection_name, hf)
 
     print("Indexing...")
-    onlyfiles = get_files(mypath)
+    onlyfiles = get_files(mypath) # provide a path to work with
+
     file_content = ""
+    # for file in onlyfiles:
+    #     file_content = ""
+    #     if file.find("~") > 0:  # added to catch files with "~" in file name
+    #         file_content = "Empty due to ~ in file name."  # added by pdchristian to catch files with "~" in file name
+    #         print("Document title with ~: " + file)
+    #     elif file.endswith(".pdf"):
+    #         try:
+    #             print("indexing " + file)
+    #             reader = PyPDF2.PdfReader(file)
+    #             for i in range(0, len(reader.pages)):
+    #                 file_content = file_content + " " + reader.pages[i].extract_text()
+    #         except Exception: # added to catch decryption error
+    #             file_content = "Empty due to extraction error."  # added by pdchristian to catch decryption error
+    #     elif file.endswith(".txt") or file.endswith(".md") or file.endswith(".markdown"):
+    #         print("indexing " + file)
+    #         f = open(file,'r',encoding='utf-8',errors='ignore')
+    #         file_content = f.read()
+    #         f.close()
+    #     elif file.endswith(".docx"):
+    #         print("indexing " + file)
+    #         file_content = getTextFromWord(file)
+    #     elif file.endswith(".pptx"):
+    #         print("indexing " + file)
+    #         file_content = getTextFromPPTX(file)
+    #     else:
+    #         continue
+
     for file in onlyfiles:
         file_content = ""
-        if file.find("~") > 0:  # added by pdchristian to catch files with "~" in file name
-            file_content = "Empty due to ~ in file name."  # added by pdchristian to catch files with "~" in file name
-            print("Document title with ~: " + file)
-        elif file.endswith(".pdf"):
-            try:
-                print("indexing " + file)
-                reader = PyPDF2.PdfReader(file)
-                for i in range(0, len(reader.pages)):
-                    file_content = file_content + " " + reader.pages[i].extract_text()
-            except Exception: # added to catch decryption error
-                file_content = "Empty due to extraction error."  # added by pdchristian to catch decryption error
-        elif file.endswith(".txt") or file.endswith(".md") or file.endswith(".markdown"):
+        if file.endswith(".pdf"):
+            print("indexing "+file)
+            reader = PyPDF2.PdfReader(file)
+            for i in range(0,len(reader.pages)):
+                file_content = file_content + " "+reader.pages[i].extract_text()
+        elif file.endswith(".txt"):
             print("indexing " + file)
-            f = open(file,'r',encoding='utf-8',errors='ignore')
+            f = open(file,'r')
             file_content = f.read()
             f.close()
         elif file.endswith(".docx"):

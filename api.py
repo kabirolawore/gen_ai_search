@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from openai import OpenAI
 
@@ -15,8 +15,8 @@ load_dotenv()
 NV_KEY = os.getenv("NVIDIA_API_KEY")
 HF_KEY = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
-print(NV_KEY)
-print(HF_KEY)
+# print(NV_KEY)
+# print(HF_KEY)
 
 
 class Item(BaseModel):
@@ -116,7 +116,9 @@ async def ask_localai(Item:Item):
                 as it is necessary to answer question."""}
     messages = [
         rolemsg,
-        {"role": "user", "content": "Documents:\n"+context+"\n\nQuestion: "+query},
+        {"role": "user",
+         "content": "Documents:\n"+context+"\n\nQuestion: " + query
+        },
     ]
     if use_nvidia_api:
         completion = client_ai.chat.completions.create(
@@ -125,7 +127,7 @@ async def ask_localai(Item:Item):
             temperature=0.5,
             top_p=1,
             max_tokens=1024,
-            stream=True
+            stream=False
         )
         # print("completion", completion)
         response = completion.choices[0].message.content
